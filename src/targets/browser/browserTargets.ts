@@ -65,7 +65,10 @@ export class BrowserTargetManager implements IDisposable {
   private _connection: CdpConnection;
   private _targets: Map<Cdp.Target.SessionID, BrowserTarget> = new Map();
   private _browser: Cdp.Api;
+<<<<<<< Updated upstream
   private readonly _detachedTargets = new Set();
+=======
+>>>>>>> Stashed changes
   readonly frameModel = new FrameModel();
   readonly serviceWorkerModel = new ServiceWorkerModel(this.frameModel);
   _sourcePathResolver: ISourcePathResolver;
@@ -115,6 +118,15 @@ export class BrowserTargetManager implements IDisposable {
     this._connection = connection;
     this._sourcePathResolver = sourcePathResolver;
     this._browser = browserSession;
+<<<<<<< Updated upstream
+=======
+    this._browser.Target.on('targetInfoChanged', event => {
+      this._targetInfoChanged(event.targetInfo);
+    });
+    this._browser.Inspector.on('targetReloadedAfterCrash', event => {
+      this._browser.Runtime.runIfWaitingForDebugger({});
+    });
+>>>>>>> Stashed changes
     this._targetOrigin = targetOrigin;
     this.serviceWorkerModel.onDidChange(() => {
       for (const target of this._targets.values()) {
@@ -170,11 +182,20 @@ export class BrowserTargetManager implements IDisposable {
   ): Promise<BrowserTarget | undefined> {
     let callback: (result: BrowserTarget | undefined) => void;
     let attachmentQueue = Promise.resolve();
+<<<<<<< Updated upstream
     const promise = new Promise<BrowserTarget | undefined>(f => (callback = f));
     const attachInner = async (targetInfo: Cdp.Target.TargetInfo) => {
       if (
         [...this._targets.values()].some(t => t.targetId === targetInfo.targetId) ||
         this._detachedTargets.has(targetInfo.targetId)
+=======
+    const detachedTargets = new Set<Cdp.Target.TargetID>();
+    const promise = new Promise<BrowserTarget | undefined>(f => (callback = f));
+    const attachInner = async ({ targetInfo }: { targetInfo: Cdp.Target.TargetInfo }) => {
+      if (
+        [...this._targets.values()].some(t => t.targetId === targetInfo.targetId) ||
+        detachedTargets.has(targetInfo.targetId)
+>>>>>>> Stashed changes
       ) {
         return; // targetInfoChanged on something we're already connected to
       }
@@ -213,6 +234,7 @@ export class BrowserTargetManager implements IDisposable {
       (attachmentQueue = attachmentQueue.then(() => fn(arg)));
 
     this._browser.Target.setDiscoverTargets({ discover: true });
+<<<<<<< Updated upstream
 
     this._browser.Target.on(
       'targetCreated',
@@ -224,6 +246,10 @@ export class BrowserTargetManager implements IDisposable {
       enqueueCall(evt => this._targetInfoChanged(evt.targetInfo, attachInner)),
     );
 
+=======
+    this._browser.Target.on('targetCreated', enqueueCall(attachInner)); // new page
+    this._browser.Target.on('targetInfoChanged', enqueueCall(attachInner)); // nav on existing page
+>>>>>>> Stashed changes
     this._browser.Target.on(
       'detachedFromTarget',
       enqueueCall(async event => {
@@ -232,6 +258,12 @@ export class BrowserTargetManager implements IDisposable {
         }
       }),
     );
+<<<<<<< Updated upstream
+=======
+    this.onTargetRemoved(target => {
+      detachedTargets.add(target.id());
+    });
+>>>>>>> Stashed changes
 
     return promise;
   }
@@ -350,7 +382,10 @@ export class BrowserTargetManager implements IDisposable {
 
     this._onTargetRemovedEmitter.fire(target);
     if (isStillAttachedInternally) {
+<<<<<<< Updated upstream
       this._detachedTargets.add(target.targetId);
+=======
+>>>>>>> Stashed changes
       await this._browser.Target.detachFromTarget({ sessionId });
     }
 
@@ -368,6 +403,7 @@ export class BrowserTargetManager implements IDisposable {
     }
   }
 
+<<<<<<< Updated upstream
   private async _targetInfoChanged(
     targetInfo: Cdp.Target.TargetInfo,
     attemptAttach: (info: Cdp.Target.TargetInfo) => Promise<void>,
@@ -386,6 +422,13 @@ export class BrowserTargetManager implements IDisposable {
 
     for (const target of targets) {
       target._updateFromInfo(targetInfo);
+=======
+  private _targetInfoChanged(targetInfo: Cdp.Target.TargetInfo) {
+    for (const target of this._targets.values()) {
+      if (target.targetId === targetInfo.targetId) {
+        target._updateFromInfo(targetInfo);
+      }
+>>>>>>> Stashed changes
     }
 
     // fire name changes for everyone since this might have caused a duplicate
